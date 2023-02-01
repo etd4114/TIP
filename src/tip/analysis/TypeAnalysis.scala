@@ -101,33 +101,44 @@ class TypeAnalysis(program: AProgram)(implicit declData: DeclarationData) extend
   def visit(node: AstNode, arg: Unit): Unit = {
     log.verb(s"Visiting ${node.getClass.getSimpleName} at ${node.loc}")
     node match {
-      case program: AProgram => ??? // <--- Complete here
-      case _: ANumber => ??? // <--- Complete here
-      case _: AInput => ??? // <--- Complete here
-      case is: AIfStmt => ??? // <--- Complete here
-      case os: AOutputStmt => ??? // <--- Complete here
-      case ws: AWhileStmt => ??? // <--- Complete here
+      case program: AProgram => 
+      case num: ANumber => unify(num, IntType())
+      case inp: AInput => unify(inp, IntType())
+      case is: AIfStmt => unify(is.guard, IntType())
+      case os: AOutputStmt => unify(os.exp, IntType())
+      case ws: AWhileStmt => unify(ws.guard, IntType())
       case as: AAssignStmt =>
         as.left match {
-          case id: AIdentifier => ??? // <--- Complete here
-          case dw: ADerefWrite => ??? // <--- Complete here
-          case dfw: ADirectFieldWrite => ??? // <--- Complete here
-          case ifw: AIndirectFieldWrite => ??? // <--- Complete here
+          case id: AIdentifier => unify(as.right, id)
+          case dw: ADerefWrite => unify(dw.exp, PointerType(as.right))
+          case dfw: ADirectFieldWrite => unify(as, PointerType(dfw.id))
+          case ifw: AIndirectFieldWrite => unify(as, PointerType(ifw.exp))
         }
       case bin: ABinaryOp =>
         bin.operator match {
-          case Eqq => ??? // <--- Complete here
-          case _ => ??? // <--- Complete here
+          case Eqq => 
+            unify(bin.left, bin.right)
+            unify(bin.left, IntType())
+          case _ => unify(bin.left, bin.right)
         }
       case un: AUnaryOp =>
         un.operator match {
-          case DerefOp => ??? // <--- Complete here
+          case DerefOp => unify(un.subexp, PointerType(un))
         }
-      case alloc: AAlloc => ??? // <--- Complete here
-      case ref: AVarRef => ??? // <--- Complete here
-      case _: ANull => ??? // <--- Complete here
-      case fun: AFunDeclaration => ??? // <--- Complete here
-      case call: ACallFuncExpr => ??? // <--- Complete here
+      case alloc: AAlloc => unify(alloc, PointerType(alloc.exp))
+      case ref: AVarRef => unify(ref, PointerType(ref.id))
+      case nully: ANull => unify(nully, PointerType(FreshVarType()))
+      case fun: AFunDeclaration =>
+      if (fun.name != "main") 
+      {
+        unify(fun, FunctionType(fun.params, fun.stmts.ret))
+      } else {
+        for (e <- fun.params) unify(e, IntType())
+        unify(fun.stmts.ret, IntType())
+        unify(fun, FunctionType(fun.params, fun.stmts))
+      }
+      case call: ACallFuncExpr => 
+        unify(call.targetFun, FunctionType(call.args, call))
       case _: AReturnStmt =>
       case rec: ARecord =>
         val fieldmap = rec.fields.foldLeft(Map[String, Term[Type]]()) { (a, b) =>
