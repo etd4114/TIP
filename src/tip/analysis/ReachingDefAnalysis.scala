@@ -9,9 +9,9 @@ import tip.cfg._
 import scala.collection.immutable.Set
 
 /**
-  * Base class for live variables analysis.
+  * Base class for reaching variables analysis.
   */
-abstract class LiveVarsAnalysis(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData) extends FlowSensitiveAnalysis(false) {
+abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData) extends FlowSensitiveAnalysis(false) {
 
   import tip.cfg.CfgOps._
   import tip.ast.AstOps._
@@ -28,16 +28,12 @@ abstract class LiveVarsAnalysis(cfg: IntraproceduralProgramCfg)(implicit declDat
       case _: CfgFunExitNode => lattice.sublattice.bottom
       case r: CfgStmtNode =>
         r.data match {
-          case cond: AExpr => s union cond.appearingIds
           case as: AAssignStmt => 
             as.left match {
               case id: AIdentifier => 
                 (s union as.right.appearingIds)
               case _ => ???
             }
-          case varr: AVarStmt => s
-          case ret: AReturnStmt => s
-          case out: AOutputStmt => s union out.appearingIds
           case _ => s
         }
       case _ => s
@@ -49,15 +45,15 @@ abstract class LiveVarsAnalysis(cfg: IntraproceduralProgramCfg)(implicit declDat
 /**
   * Live variables analysis that uses the simple fixpoint solver.
   */
-class LiveVarsAnalysisSimpleSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
-    extends LiveVarsAnalysis(cfg)
+class ReachingDefAnalysisSimpleSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
+    extends ReachingDefAnalysis(cfg)
     with SimpleMapLatticeFixpointSolver[CfgNode]
     with BackwardDependencies
 
 /**
-  * Live variables analysis that uses the worklist solver.
+  * Reaching def analysis that uses the worklist solver.
   */
-class LiveVarsAnalysisWorklistSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
-    extends LiveVarsAnalysis(cfg)
+class ReachingDefAnalysisWorklistSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
+    extends ReachingDefAnalysis(cfg)
     with SimpleWorklistFixpointSolver[CfgNode]
     with BackwardDependencies
