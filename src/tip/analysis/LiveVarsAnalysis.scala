@@ -32,10 +32,10 @@ abstract class LiveVarsAnalysis(cfg: IntraproceduralProgramCfg)(implicit declDat
           case as: AAssignStmt => 
             as.left match {
               case id: AIdentifier => 
-                (s union as.right.appearingIds)
+                (s -- id.appearingIds) union as.right.appearingIds 
               case _ => ???
             }
-          case varr: AVarStmt => s
+          case varr: AVarStmt => s -- varr.appearingIds
           case ret: AReturnStmt => s
           case out: AOutputStmt => s union out.appearingIds
           case _ => s

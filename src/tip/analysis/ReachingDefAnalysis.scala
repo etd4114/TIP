@@ -16,7 +16,7 @@ abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit decl
   import tip.cfg.CfgOps._
   import tip.ast.AstOps._
 
-  val lattice: MapLattice[CfgNode, PowersetLattice[ADeclaration]] = new MapLattice(new PowersetLattice())
+  val lattice: MapLattice[CfgNode, PowersetLattice[UnlabelledNode[AExpr]]] = new MapLattice(new PowersetLattice())
 
   val domain: Set[CfgNode] = cfg.nodes
 
@@ -31,7 +31,7 @@ abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit decl
           case as: AAssignStmt => 
             as.left match {
               case id: AIdentifier => 
-                (s union as.right.appearingIds)
+                s union as.appearingNonInputExpressions.map(UnlabelledNode[AExpr])
               case _ => ???
             }
           case _ => s
@@ -48,7 +48,7 @@ abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit decl
 class ReachingDefAnalysisSimpleSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
     extends ReachingDefAnalysis(cfg)
     with SimpleMapLatticeFixpointSolver[CfgNode]
-    with BackwardDependencies
+    with ForwardDependencies
 
 /**
   * Reaching def analysis that uses the worklist solver.
@@ -56,4 +56,4 @@ class ReachingDefAnalysisSimpleSolver(cfg: IntraproceduralProgramCfg)(implicit d
 class ReachingDefAnalysisWorklistSolver(cfg: IntraproceduralProgramCfg)(implicit declData: DeclarationData)
     extends ReachingDefAnalysis(cfg)
     with SimpleWorklistFixpointSolver[CfgNode]
-    with BackwardDependencies
+    with ForwardDependencies
