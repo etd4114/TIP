@@ -16,7 +16,7 @@ abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit decl
   import tip.cfg.CfgOps._
   import tip.ast.AstOps._
 
-  val lattice: MapLattice[CfgNode, PowersetLattice[Option[AAssignStmt]]] = new MapLattice(new PowersetLattice())
+  val lattice: MapLattice[CfgNode, PowersetLattice[AAssignStmt]] = new MapLattice(new PowersetLattice())
 
   val domain: Set[CfgNode] = cfg.nodes
 
@@ -31,9 +31,7 @@ abstract class ReachingDefAnalysis(cfg: IntraproceduralProgramCfg)(implicit decl
           case as: AAssignStmt => 
             as.left match {
               case id: AIdentifier => 
-                s.filter { e =>
-                  !(n.appearingAssignments subsetOf e.n.appearingAssignments)
-                } union n.appearingAssignments.map(Option[AAssignStmt])
+                s.filterNot(e => id.appearingIds == e.left.asInstanceOf[AIdentifier].appearingIds) union Set(n.appearingAssignments.get)
               case _ => ???
             }
           case _ => s
